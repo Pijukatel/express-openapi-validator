@@ -70,6 +70,32 @@ const apiSpec: OpenAPIV3.DocumentV3_1 = {
         },
       },
     },
+    '/nullable-items': {
+      get: {
+        responses: {
+          '200': {
+            description: '',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      // OpenAPI 3.1 nullable date-time field
+                      created_at: {
+                        type: ['string', 'null'],
+                        format: 'date-time',
+                      },
+                    },
+                  },
+                } as any,
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };
 
@@ -99,6 +125,10 @@ describe('issue #1177 - serdes with OpenAPI 3.1 array type specifier', () => {
             throw new Error('created_at should be deserialized to a Date');
           }
           res.json({ typeof: typeof item.created_at, iso: item.created_at.toISOString() });
+        });
+        app.get(`${app.basePath}/nullable-items`, (req, res) => {
+          // A null value for a nullable date-time field must not throw.
+          res.json([{ created_at: null }]);
         });
         app.use((err, req, res, next) => {
           res.status(err.status ?? 500).json({ message: err.message, errors: err.errors });
@@ -131,5 +161,14 @@ describe('issue #1177 - serdes with OpenAPI 3.1 array type specifier', () => {
       .then((r) => {
         expect(r.body.typeof).to.equal('object');
         expect(r.body.iso).to.equal(isoDate);
+      }));
+
+  it('does not throw a validation error when a nullable date-time item is null', async () =>
+    request(app)
+      .get(`${app.basePath}/nullable-items`)
+      .expect(200)
+      .then((r) => {
+        expect(r.body).to.be.an('array').with.lengthOf(1);
+        expect(r.body[0].created_at).to.equal(null);
       }));
 });
