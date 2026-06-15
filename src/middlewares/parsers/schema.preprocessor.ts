@@ -252,7 +252,13 @@ export class SchemaPreprocessor {
           const child = new Node(node, s, [...node.path, 'anyOf', i + '']);
           recurse(node, child, opts);
         });
-      } else if (schema.type === 'array' && schema.items) {
+      } else if (
+        (schema.type === 'array' ||
+          (Array.isArray(schema.type) && schema.type.includes('array'))) &&
+        schema.items
+      ) {
+        // `type` may be an array of options in OpenAPI 3.1 (e.g. ['array', 'null']),
+        // so descend into `items` whenever 'array' is among the allowed types.
         const child = new Node(node, schema.items, [...node.path, 'items']);
         recurse(node, child, opts);
       } else if (schema.properties) {
