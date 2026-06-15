@@ -1,0 +1,60 @@
+openapi: "3.1.0"
+info:
+  title: "Issue #1177 - serdes with OpenAPI 3.1 array type specifier"
+  version: "1"
+servers:
+  - url: /v1/
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemList"
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemList"
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemList"
+  /nullable-items:
+    get:
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NullableItemList"
+components:
+  schemas:
+    ItemList:
+      type:
+        - array
+        - "null"
+      items:
+        type: object
+        properties:
+          created_at:
+            type: string
+            format: date-time
+    NullableItemList:
+      type: array
+      items:
+        type: object
+        properties:
+          created_at:
+            type:
+              - string
+              - "null"
+            format: date-time
