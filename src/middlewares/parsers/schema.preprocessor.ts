@@ -252,13 +252,7 @@ export class SchemaPreprocessor {
           const child = new Node(node, s, [...node.path, 'anyOf', i + '']);
           recurse(node, child, opts);
         });
-      } else if (
-        (schema.type === 'array' ||
-          (Array.isArray(schema.type) && schema.type.includes('array'))) &&
-        schema.items
-      ) {
-        // `type` may be an array of options in OpenAPI 3.1 (e.g. ['array', 'null']),
-        // so descend into `items` whenever 'array' is among the allowed types.
+      } else if (schema.type === 'array' && schema.items) {
         const child = new Node(node, schema.items, [...node.path, 'items']);
         recurse(node, child, opts);
       } else if (schema.properties) {
@@ -463,8 +457,6 @@ export class SchemaPreprocessor {
   ) {
     // `type` may be a string (`'string'`) or, in OpenAPI 3.1, an array of
     // options (e.g. `['string', 'null']`). A serdes format is a string format,
-    // so only treat the field as serializable when every allowed type is
-    // `string`/`null` — never hijack a wider union (e.g. `['string','integer']`).
     const types = Array.isArray(schema.type) ? schema.type : [schema.type];
     const isSerDesString =
       types.includes('string') &&
@@ -481,9 +473,8 @@ export class SchemaPreprocessor {
         (<any>schema).type = ['string', 'number', 'boolean', 'object', 'array'];
       } else if (types.includes('null')) {
         // Normalize the OpenAPI 3.1 `['string', 'null']` form to `nullable` so
-        // null short-circuits validation before the `x-eov-type` check runs.
-        (<any>schema).type = ['string', 'number', 'boolean', 'object', 'array'];
         (<any>schema).nullable = true;
+        (<any>schema).type = ['string', 'number', 'boolean', 'object', 'array'];
       } else {
         delete schema.type;
       }
