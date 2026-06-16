@@ -461,16 +461,25 @@ export class SchemaPreprocessor {
     schema: SchemaObject,
     state: TraversalState,
   ) {
+    // `type` may be a string (`'string'`) or, in OpenAPI 3.1, an array of
+    // options (e.g. `['string', 'null']`). Treat it as serializable when
+    // 'string' is among the allowed types and a serdes format is registered.
+    const types = Array.isArray(schema.type) ? schema.type : [schema.type];
     if (
-      schema.type === 'string' &&
+      types.includes('string') &&
       !!schema.format &&
       this.serDesMap[schema.format]
     ) {
       const serDes = this.serDesMap[schema.format];
-      (<any>schema)['x-eov-type'] = schema.type;
+      (<any>schema)['x-eov-type'] = 'string';
       if ('nullable' in schema) {
         // Ajv requires `type` keyword with `nullable` (regardless of value).
         (<any>schema).type = ['string', 'number', 'boolean', 'object', 'array'];
+      } else if (types.includes('null')) {
+        // Normalize the OpenAPI 3.1 `['string', 'null']` form to `nullable` so
+        // null short-circuits validation before the `x-eov-type` check runs.
+        (<any>schema).type = ['string', 'number', 'boolean', 'object', 'array'];
+        (<any>schema).nullable = true;
       } else {
         delete schema.type;
       }
