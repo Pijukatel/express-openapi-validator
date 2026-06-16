@@ -462,11 +462,15 @@ export class SchemaPreprocessor {
     state: TraversalState,
   ) {
     // `type` may be a string (`'string'`) or, in OpenAPI 3.1, an array of
-    // options (e.g. `['string', 'null']`). Treat it as serializable when
-    // 'string' is among the allowed types and a serdes format is registered.
+    // options (e.g. `['string', 'null']`). A serdes format is a string format,
+    // so only treat the field as serializable when every allowed type is
+    // `string`/`null` — never hijack a wider union (e.g. `['string','integer']`).
     const types = Array.isArray(schema.type) ? schema.type : [schema.type];
-    if (
+    const isSerDesString =
       types.includes('string') &&
+      types.every((t) => t === 'string' || t === 'null');
+    if (
+      isSerDesString &&
       !!schema.format &&
       this.serDesMap[schema.format]
     ) {
